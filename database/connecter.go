@@ -56,10 +56,7 @@ func createDatabase(db *sql.DB) error {
 		start_year INTEGER,
 		end_year INTEGER,
 		poster TEXT NOT NULL,
-		country TEXT,
-		number_of_views INTEGER NOT NULL DEFAULT 0,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		country TEXT
 	);`
 
 	_, err := db.Exec(query)
