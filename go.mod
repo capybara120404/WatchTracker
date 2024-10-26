@@ -1,4 +1,4 @@
-module github.com/capybara120404/watch-tracker/parcer-service
+module github.com/capybara120404/watch-tracker
 
 go 1.23.2
 
@@ -9,5 +9,5 @@ require (
 
 require (
 	github.com/andybalholm/cascadia v1.3.2 // indirect
-	golang.org/x/net v0.30.0 // indirect
+	golang.org/x/net v0.29.0 // indirect
 )
