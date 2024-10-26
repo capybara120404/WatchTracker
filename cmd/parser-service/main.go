@@ -4,54 +4,45 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"reflect"
 	"sync"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/capybara120404/watch-tracker/parcer-service/models"
+	"github.com/capybara120404/watch-tracker/database"
+	"github.com/capybara120404/watch-tracker/models"
+	"github.com/capybara120404/watch-tracker/repository"
 )
 
 const url string = "https://s2.fanserialstv.net"
 
 func main() {
-	var (
-		yesterdaySeriesInfo []models.SeriesInfo
-		todaySeriesInfo     []models.SeriesInfo
-		wg                  sync.WaitGroup
-		err                 error
-	)
+	connecter, err := database.OpenOrCreate("watch_tracker.db")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer connecter.Close()
 
-	defer wg.Wait()
-	wg.Add(1)
-	go func() {
-		for {
-			todaySeriesInfo, err = fetchSeriesData(url)
-			if err != nil {
-				log.Println(err)
-			}
+	var todaySeriesInfo []models.SeriesInfo
+	todaySeriesInfo, err = fetchSeriesData(url)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
-			if !reflect.DeepEqual(todaySeriesInfo, yesterdaySeriesInfo) {
-				yesterdaySeriesInfo = todaySeriesInfo
+	wg := sync.WaitGroup{}
+	for i := range todaySeriesInfo {
+		wg.Add(1)
+		go func(series *models.SeriesInfo) {
+			defer wg.Done()
+			fetchSeriesDetails(series, url)
+		}(&todaySeriesInfo[i])
+	}
+	wg.Wait()
 
-				detailsWG := sync.WaitGroup{}
-				for i := range todaySeriesInfo {
-					detailsWG.Add(1)
-					go func(series *models.SeriesInfo) {
-						defer detailsWG.Done()
-						fetchSeriesDetails(series, url)
-					}(&todaySeriesInfo[i])
-				}
-				detailsWG.Wait()
-			}
-
-			for i := 0; i < 10; i++ {
-				fmt.Println(todaySeriesInfo[i])
-			}
-
-			time.Sleep(24 * time.Hour)
-		}
-	}()
+	repository := repository.NewSeriesInfoRepository(connecter)
+	for _, series := range todaySeriesInfo {
+		repository.Add(series)
+	}
 }
 
 func fetchSeriesData(url string) ([]models.SeriesInfo, error) {
