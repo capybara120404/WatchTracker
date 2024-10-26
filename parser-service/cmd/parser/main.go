@@ -9,14 +9,19 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/capybara120404/watch-tracker/models"
+	"github.com/capybara120404/watch-tracker/parcer-service/models"
 )
 
+const url string = "https://s2.fanserialstv.net"
+
 func main() {
-	url := "https://s2.fanserialstv.net"
-	var yesterdaySeriesInfo, todaySeriesInfo []models.SeriesInfo
-	var err error
-	wg := sync.WaitGroup{}
+	var (
+		yesterdaySeriesInfo []models.SeriesInfo
+		todaySeriesInfo     []models.SeriesInfo
+		wg                  sync.WaitGroup
+		err                 error
+	)
+
 	defer wg.Wait()
 	wg.Add(1)
 	go func() {
@@ -25,6 +30,7 @@ func main() {
 			if err != nil {
 				log.Println(err)
 			}
+
 			if !reflect.DeepEqual(todaySeriesInfo, yesterdaySeriesInfo) {
 				yesterdaySeriesInfo = todaySeriesInfo
 
@@ -97,7 +103,7 @@ func fetchSeriesDetails(series *models.SeriesInfo, url string) {
 		log.Printf("error parsing series details for %s: %v", series.Title, err)
 		return
 	}
-	poster ,_:= doc.Find(".field-poster img").Attr("src")
-	series.Poster = url+poster
+	poster, _ := doc.Find(".field-poster img").Attr("src")
+	series.Poster = url + poster
 	series.Country = doc.Find(".info-list li:contains('Страна:') .field-text").Text()
 }
