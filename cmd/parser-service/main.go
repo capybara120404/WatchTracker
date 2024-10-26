@@ -22,31 +22,31 @@ func main() {
 	}
 	defer connecter.Close()
 
-	var todaySeriesInfo []models.SeriesInfo
-	todaySeriesInfo, err = fetchSeriesData(url)
+	var series []models.Series
+	series, err = fetchSeriesData(url)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
 	wg := sync.WaitGroup{}
-	for i := range todaySeriesInfo {
+	for i := range series {
 		wg.Add(1)
-		go func(series *models.SeriesInfo) {
+		go func(series *models.Series) {
 			defer wg.Done()
 			fetchSeriesDetails(series, url)
-		}(&todaySeriesInfo[i])
+		}(&series[i])
 	}
 	wg.Wait()
 
 	repository := repository.NewSeriesInfoRepository(connecter)
-	for _, series := range todaySeriesInfo {
-		repository.Add(series)
+	for _, s := range series {
+		repository.Add(s)
 	}
 }
 
-func fetchSeriesData(url string) ([]models.SeriesInfo, error) {
-	var seriesData []models.SeriesInfo
+func fetchSeriesData(url string) ([]models.Series, error) {
+	var seriesData []models.Series
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -69,7 +69,7 @@ func fetchSeriesData(url string) ([]models.SeriesInfo, error) {
 		startYear, _ := s.Attr("data-start-year")
 		endYear, _ := s.Attr("data-end-year")
 
-		seriesData = append(seriesData, models.SeriesInfo{
+		seriesData = append(seriesData, models.Series{
 			Title:     title,
 			Link:      url + link,
 			IMDB:      imdb,
@@ -81,7 +81,7 @@ func fetchSeriesData(url string) ([]models.SeriesInfo, error) {
 	return seriesData, nil
 }
 
-func fetchSeriesDetails(series *models.SeriesInfo, url string) {
+func fetchSeriesDetails(series *models.Series, url string) {
 	resp, err := http.Get(series.Link)
 	if err != nil {
 		log.Printf("error fetching series details for %s: %v", series.Title, err)
